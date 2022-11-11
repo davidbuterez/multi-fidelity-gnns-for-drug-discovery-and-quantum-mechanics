@@ -179,7 +179,7 @@ Here, `type` refers to a classification or regression model (these are valid opt
 As with the other models, a helper notebook to generate training commands/scripts is provided (`generate_shallow_scripts.ipynb`).
 
 ## Requirements/installation
-The main dependencies are PyTorch, PyTorch Geometric, PyTorch Lightning, and RDKit. Certain steps also require pandas, numpy, scipy, sklearn, and tqdm.
+The main dependencies are PyTorch, PyTorch Geometric, PyTorch Lightning, and RDKit. Certain steps also require pandas, numpy, scipy, sklearn, and tqdm. The install time is dedtermined in large part by the quality of the internet connection, but should take less than 30 minutes on a normal computer.
 
 The latest releases of the above work with our code (tested up to PyTorch 1.12). For example:
 
