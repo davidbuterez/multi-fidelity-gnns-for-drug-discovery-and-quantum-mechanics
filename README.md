@@ -10,7 +10,32 @@ The public multi-fidelity datasets are now part of a collection named **MF-PCBA*
 
 To minimise possible points of failure, the data acquisition and modelling workflows are split into several steps.
 
-Note that the training scripts were designed to be used without a package structure, which is still the approach taken by the notebooks that generate scripts below.
+Note that the training scripts were designed to be used without a package structure, which is still the approach taken by the notebooks that generate the `.sh` scripts below.
+
+## Reproducibility
+All the data splits for the non-proprietary data are available in the [MF-PCBA repository](https://github.com/davidbuterez/mf-pcba/). The training code sets a global seed using `pytorch_lightning.seed_everything(0)`, which covers PyTorch, NumPy and Python random number generators.
+
+## Example/Demo
+An example split DR dataset (AID 1445) is provided in the directory [example_DR_dataset_AID1445](https://github.com/davidbuterez/multi-fidelity-gnns-for-drug-discovery/example_DR_dataset_AID1445), containing `train.csv`, `validate.csv`, and `test.csv` files (the same as the output of the MF-PCBA data acquisition workflow below). The provided example dataset also includes SD embeddings for each molecule (64 dimensions) from a separate SD model. SD embeddings can be added to the training files following the instructions below. Due to the large size of the SD datasets (typically more than 300,000 molecules), it is impractical to provide an example SD dataset in this repository (training also takes multiple hours/days). Such experiments can be performed by following the instructions under the **Workflows** section (subsection 2).
+
+The following code can be used to train a base (non-augmented) DR model for the example dataset (replace the input/output directories):
+```
+python -m multi_fidelity_modelling.DR_modelling.deep_learning.train_dr --data-path /.../multi-fidelity-gnns-for-drug-discovery/example_DR_dataset_AID1445 --out-dir /.../out --target-label DR --node-latent-dim 50 --graph-latent-dim 64 --smiles-column neut-smiles --max-atomic-number 35 --readout global_add_pool --id-column CID --no-use-vgae --num-layers 2 --conv GCN --use-batch-norm --gnn-intermediate-dim 128 --name 1445 --task-type regression --no-use-cuda
+```
+
+Training a model with experimentally-determined SD labels:
+```
+python -m multi_fidelity_modelling.DR_modelling.deep_learning.train_dr --data-path /.../multi-fidelity-gnns-for-drug-discovery/example_DR_dataset_AID1445 --out-dir /.../out --target-label DR --node-latent-dim 50 --graph-latent-dim 64 --smiles-column neut-smiles --max-atomic-number 35 --readout global_add_pool --id-column CID --no-use-vgae --num-layers 2 --conv GCN --use-batch-norm --gnn-intermediate-dim 128 --name 1445 --task-type regression --no-use-cuda --lbl-or-emb lbl  --auxiliary-data-column-name SD  --auxiliary-dim 1
+```
+
+Training a model with separately-computed SD embeddings:
+```
+python -m multi_fidelity_modelling.DR_modelling.deep_learning.train_dr --data-path /.../multi-fidelity-gnns-for-drug-discovery/example_DR_dataset_AID1445 --out-dir /.../out --target-label DR --node-latent-dim 50 --graph-latent-dim 64 --smiles-column neut-smiles --max-atomic-number 35 --readout global_add_pool --id-column CID --no-use-vgae --num-layers 2 --conv GCN --use-batch-norm --gnn-intermediate-dim 128 --name 1445 --task-type regression --no-use-cuda --lbl-or-emb emb  --auxiliary-data-column-name Embeddings  --auxiliary-dim 64
+```
+
+The DR models above are quick enough to require around 1 second per epoch, and less than 1 minute overall training time for the entire training run on a modern laptop. These times are achieved without using a graphics processing unit (CUDA). CUDA is recommended for the larger SD datasets.
+
+Please check the **Requirements/installation** section below for details regarding the software versions that were tested and compatible hardware.
 
 ## Workflows
 ### 0. Data acquisition
@@ -178,3 +203,13 @@ conda install rdkit -c conda-forge
 Note that different versions of RDKit might produce slightly different results when filtering the datasets.
 
 An example conda environment file is provided in this repository (`env.yml`).
+
+### Tested versions
+The code was primarily developed and tested on a computer running Ubuntu 21.10, PyTorch 1.10.1 (with CUDA 11.3), PyTorch Geometric 2.0.3, PyTorch Lightning 1.5.7, and RDKit 2021.09.3.
+
+The code was also tested on a different Linux platform with PyTorch 1.11.0 (with CUDA 11.3), PyTorch Geometric 2.1.0, PyTorch Lightning 1.6.0, and RDKit 2021.09.4.
+
+We have also successfully run the code on macOS Ventura (13.0.1), a nightly version of PyTorch (1.14.0.dev20221026), PyTorch Geometric 2.1.0 (**installed from source, not from pip or conda**), PyTorch Lightning 1.7.7, and RDKit 2022.09.1.
+
+### Tested hardware
+The code was tested on an NVIDIA GeForce RTX 3090 24GB GPU (running under Ubuntu 21.10, with driver version 510.73.05), NVIDIA Tesla V100 16GB and 32GB GPUs, and an Apple M1 chip (CPU only).
