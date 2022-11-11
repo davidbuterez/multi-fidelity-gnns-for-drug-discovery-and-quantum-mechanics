@@ -33,6 +33,8 @@ Training a model with separately-computed SD embeddings:
 python -m multi_fidelity_modelling.DR_modelling.deep_learning.train_dr --data-path /.../multi-fidelity-gnns-for-drug-discovery/example_DR_dataset_AID1445 --out-dir /.../out --target-label DR --node-latent-dim 50 --graph-latent-dim 64 --smiles-column neut-smiles --max-atomic-number 35 --readout global_add_pool --id-column CID --no-use-vgae --num-layers 2 --conv GCN --use-batch-norm --gnn-intermediate-dim 128 --name 1445 --task-type regression --no-use-cuda --lbl-or-emb emb  --auxiliary-data-column-name Embeddings  --auxiliary-dim 64
 ```
 
+The training script above will produce a `test_metrics.npy` file containing the test set metrics and a `test_output.npy` file containing the predictions for the test set (all generated files are located in the output directory provided to the training script).
+
 The DR models above are quick enough to require around 1 second per epoch, and less than 1 minute overall training time for the entire training run on a modern laptop. These times are achieved without using a graphics processing unit (CUDA). CUDA is recommended for the larger SD datasets.
 
 Please check the **Requirements/installation** section below for details regarding the software versions that were tested and compatible hardware.
