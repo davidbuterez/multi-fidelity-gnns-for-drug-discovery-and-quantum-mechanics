@@ -1,10 +1,10 @@
 # Multi-fidelity GNNs for drug discovery and quantum mechanics
 ![](main-figure.png)
 ## Abstract
-The design of molecules with targeted properties requires a careful trade-off between throughput, cost, and accuracy. Typically, the process involves a screening cascade where individual stages are loosely connected and each one generates data at different scale and fidelity. We consider this problem setting holistically and investigate the potential of transfer learning for improved molecular property prediction on sparse and expensive to acquire high-fidelity data by leveraging low-fidelity measurements as an inexpensive proxy for a targeted property of interest. We start with a transductive setting and consider a transfer learning approach that leverages the information carried by low-fidelity evaluations via molecular representations explicitly incorporating them. As high-fidelity data is not always constrained to the transductive setting, we propose alternatives tailored for inductive learning where sparse data involves predictions on molecules that have not been associated with low-fidelity labels. Our main algorithmic contributions include means to effectively adapt graph neural networks for transfer learning and an extension of variational graph autoencoders that learn latent space embeddings amenable to fine-tuning via downstream small-sample models for molecular property prediction. We have evaluated the proposed methods on novel drug discovery-focused datasets consisting of more than 28 million unique experimental protein-ligand interactions and on the multi-fidelity quantum chemistry dataset QMugs. Our empirical results show that transfer learning leveraging low-fidelity evaluations can improve the accuracy of predictive models up to $8$ times while using an order of magnitude less high-fidelity training data. Moreover, the proposed methods consistently outperform existing transfer learning strategies on the drug discovery and quantum mechanics datasets.
+We investigate the potential of graph neural networks (GNNs) for transfer learning and improving molecular property prediction on sparse and expensive to acquire high-fidelity data by leveraging low-fidelity measurements as an inexpensive proxy for a targeted property of interest. This problem arises in discovery processes that rely on funnels or screening cascades for trading off the overall costs against throughput and accuracy. Typically, individual stages in these processes are loosely connected and each one generates data at different scale and fidelity. We consider this setup holistically and demonstrate empirically that existing transfer learning techniques for GNNs are generally unable to harness the information from multi-fidelity cascades. We propose several effective transfer learning approaches based on GNNs including: i) feature augmentation using the outputs of supervised models trained on low-fidelity data (e.g. latent space embeddings or predictions generated using supervised variational graph autoencoders), and ii) transfer learning with adaptive readouts, where pre-training and fine-tuning the readout layer plays a key role in improving the performance on sparse tasks. We study both a transductive setting, where each high-fidelity data point has an associated low-fidelity measurement, as well as the more challenging inductive setup where low-fidelity measurements are not available and need to be extrapolated, which is common in drug discovery. Our empirical evaluation involves a novel drug discovery collection of more than 28 million unique experimental protein-ligand interactions across 37 different targets and 12 quantum properties from the dataset QMugs, along with baselines ranging from GNNs to random forests and support vector machines. The results indicate that transfer learning leveraging low-fidelity evaluations can improve the accuracy of predictive models on sparse tasks by up to eight times while using an order of magnitude less high-fidelity training data. Moreover, the proposed methods consistently outperform existing transfer learning strategies for graph-structured data on the drug discovery and quantum mechanics datasets.
 
 ## General
-This repository contains the source code for all the machine learning models presented in the **Accelerating and improving molecular property prediction by transfer learning from low-fidelity measurements to sparse high-fidelity tasks** paper, as well as instructions on how to run the models and collect metrics.
+This repository contains the source code for all the machine learning models presented in the **Transfer learning with graph neural networks for improved molecular property prediction in the multi-fidelity setting** paper, as well as instructions on how to run the models and collect metrics.
 
 The public multi-fidelity datasets are now part of a collection named **MF-PCBA** (Multi-Fidelity PubChem BioAssay). The datasets are accessible through a separate repository: [https://github.com/davidbuterez/mf-pcba/](https://github.com/davidbuterez/mf-pcba/)
 
@@ -18,7 +18,7 @@ An example drug discovery multi-fidelity dataset (AID 1445) is provided in the d
 
 The following code can be used to train a base (non-augmented) high-fidelity model for the example dataset (replace the input/output directories):
 ```
-python train_high_fidelity.py
+python -m multifidelity_gnn.train.train_high_fidelity
 --data-path example_data/DR --target-label DR --node-latent-dim 50 --smiles-column neut-smiles
 --max-atomic-number 35 --max-num-atoms-in-mol 48 --id-column CID --use-vgae --num-layers 3 --conv GCN
 --use-batch-norm --gnn-intermediate-dim 256 --no-use-cuda --task-type regression --batch-size 32
@@ -27,7 +27,7 @@ python train_high_fidelity.py
 
 Training a model with experimentally-determined low-fidelity labels:
 ```
-python train_high_fidelity.py
+python -m multifidelity_gnn.train.train_high_fidelity
 --data-path example_data/DR --target-label DR --node-latent-dim 50 --smiles-column neut-smiles
 --max-atomic-number 35 --max-num-atoms-in-mol 48 --id-column CID --use-vgae --num-layers 3 --conv GCN
 --use-batch-norm --gnn-intermediate-dim 256 --no-use-cuda --task-type regression --batch-size 32
@@ -38,7 +38,7 @@ python train_high_fidelity.py
 
 Training a model with separately-computed low-fidelity embeddings:
 ```
-python train_high_fidelity.py
+python -m multifidelity_gnn.train.train_high_fidelity
 --data-path example_data/DR --target-label DR --node-latent-dim 50 --smiles-column neut-smiles
 --max-atomic-number 35 --max-num-atoms-in-mol 48 --id-column CID --use-vgae --num-layers 3 --conv GCN
 --use-batch-norm --gnn-intermediate-dim 256 --no-use-cuda --task-type regression --batch-size 32
@@ -55,7 +55,7 @@ The high-fidelity models above are quick enough to require around 1 second per e
 Please check the **Requirements/installation** section below for details regarding the software versions that were tested and compatible hardware.
 
 ## QMugs
-The SMILES-encoded QMugs dataset can be obtained from the official repository ([ETH Library Collection service](https://www.research-collection.ethz.ch/handle/20.500.11850/482129)). In particular, we use the `summary.csv` file. All the splits described in the paper can be assembled by using the `chembl_id` and `conf_id` indices provided in this repository ([assemble_QMugs/data_indices](https://github.com/davidbuterez/multi-fidelity-gnns-for-drug-discovery/tree/main/assemble_QMugs/data_indices)), as exemplified in the [assemble_QMugs/assemble_QMugs.ipynb](https://github.com/davidbuterez/multi-fidelity-gnns-for-drug-discovery/tree/main/assemble_QMugs/assemble_QMugs.ipynb) notebook.
+The SMILES-encoded QMugs dataset can be obtained from the official repository ([ETH Library Collection service](https://www.research-collection.ethz.ch/handle/20.500.11850/482129)). In particular, we use the `summary.csv` file. All the splits described in the paper can be assembled by using the `chembl_id` and `conf_id` indices provided in this repository ([assemble_QMugs/data_indices](https://github.com/davidbuterez/multi-fidelity-gnns-for-drug-discovery/tree/main/assemble_QMugs/data_indices)), as exemplified in the [assemble_QMugs/assemble_QMugs.ipynb](https://github.com/davidbuterez/multi-fidelity-gnns-for-drug-discovery/tree/main/assemble_QMugs/assemble_QMugs.ipynb) notebook. We have further removed molecules that were more than 5 standard deviations away from the mean (for each of the 12 properties, for both DFT and GFN2-xTB), removing slightly over 1% of the total number of molecules.
 
 All the deep learning training code available in this repository is exemplified on drug discovery data can be used seamlessly with the QMugs data.
 
@@ -90,7 +90,7 @@ parent_dir/
 These models do not require a separate low-fidelity modelling phase and can be applied directly to high-fidelity data with train, validation, and test splits. High-fidelity model training is handled by the Python script `train_high_fidelity.py`. An example:
 
 ```
-python train_high_fidelity.py
+python -m multifidelity_gnn.train.train_high_fidelity
 --data-path <directory containing train/val/test files>
 --out-dir <directory where checkpoints and metrics are saved>
 --target-label HF --node-latent-dim 50 --smiles-column neut-smiles
@@ -117,7 +117,7 @@ Augmenting with low-fidelity embeddings or predicted labels requires training a 
 This task is handled with the Python script `train_low_fidelity.py`, which is very similar in usage to `train_high_fidelity.py`. An example:
 
 ```
-python train_low_fidelity.py --data-path example_data/SD/SD.csv --low-fidelity-label SD --node-latent-dim 50
+python -m multifidelity_gnn.train.train_low_fidelity --data-path example_data/SD/SD.csv --low-fidelity-label SD --node-latent-dim 50
 --graph-latent-dim 256 --out-dir out_SD --smiles-column neut-smiles --max-atomic-number 53 --max-num-atoms-in-mol 124
 --readout set_transformer --id-column CID --monitor-loss-name train_total_loss --use-vgae --num-layers 3 --conv GCN
 --use-batch-norm --num-epochs 1 --gnn-intermediate-dim 256 --use-cuda --logging-name AID1445_LF_ST --batch-size 512
@@ -134,7 +134,7 @@ Once the model has finished training, it can be loaded up from the latest checkp
 This task is covered by the same `train_low_fidelity.py` script, but a checkpoint path (`--ckpt-path`) must be specified, and the boolean option `--load-ckpt-and-generate-embs` must be enabled:
 
 ```
-python train_low_fidelity.py --data-path example_data/SD/SD.csv --low-fidelity-label SD --node-latent-dim 50
+python -m multifidelity_gnn.train.train_low_fidelity --data-path example_data/SD/SD.csv --low-fidelity-label SD --node-latent-dim 50
 --graph-latent-dim 256 --out-dir out_SD --smiles-column neut-smiles --max-atomic-number 53 --max-num-atoms-in-mol 124
 --readout set_transformer --id-column CID --monitor-loss-name train_total_loss --use-vgae --num-layers 3 --conv GCN
 --use-batch-norm --num-epochs 1 --gnn-intermediate-dim 256 --use-cuda --logging-name AID1445_LF_ST --batch-size 512
@@ -190,7 +190,7 @@ The training script will save the trained models, predictions and metrics in a p
 An RF example:
 
 ```
-python train_shallow_high_fidelity.py --data-path example_data/DR --smiles-column neut-smiles
+python -m multifidelity_gnn.train.train_shallow_high_fidelity --data-path example_data/DR --smiles-column neut-smiles
 --DR-label DR --fp-or-pc fp --rf-or-svm rf --task-type regression --save-path out_shallow
 ```
 
@@ -199,7 +199,7 @@ The selection of RF or SVM models is made using the `--rf-or-svm` option (possib
 As for the deep learning models, the shallow models can be augmented with low-fidelity labels:
 
 ```
-python train_shallow_high_fidelity.py --data-path example_data/DR --smiles-column neut-smiles
+python -m multifidelity_gnn.train.train_shallow_high_fidelity --data-path example_data/DR --smiles-column neut-smiles
 --DR-label DR --fp-or-pc fp --rf-or-svm rf --task-type regression --save-path out_shallow
 --lbl-or-emb lbl --train-SD-label SD --eval-SD-label SD
 ```
@@ -207,15 +207,88 @@ python train_shallow_high_fidelity.py --data-path example_data/DR --smiles-colum
 or with low-fidelity embeddings:
 
 ```
-python train_shallow_high_fidelity.py --data-path example_data/DR --smiles-column neut-smiles
+python -m multifidelity_gnn.train.train_shallow_high_fidelity --data-path example_data/DR --smiles-column neut-smiles
 --DR-label DR --fp-or-pc fp --rf-or-svm rf --task-type regression --save-path out_shallow
 --lbl-or-emb emb --SD-EMBS-label STEmbeddings
 ```
 
+## Multi-fidelity state embedding (MFSE)
+To run the MFSE algorithm with only high-fidelity data:
+
+```
+python -m mfse.train  --high-fi-train-data-path example_data/DR/train.csv
+--high-fi-val-data-path example_data/DR/validate.csv  --high-fi-test-data-path example_data/DR/test.csv
+--high-fi-batch-size 32 --high-fi-target-label DR --just-high-fi --max-atomic-number 35 --edge-dim 13
+--node-latent-dim 50 --edge-latent-dim 50 --fidelity-embedding-dim 16 --use-set2set --smiles-column neut-smiles
+--id-column CID --out-dir <OUT_PATH> --logging-name testing-high-fi --task-type regression
+--dataloader-num-workers 2 --use-cuda --lr 0.0001 --num-layers 3 --no-use-batch-norm
+```
+
+To jointly use the low-fidelity data:
+```
+python -m mfse.train  --high-fi-train-data-path example_data/DR/train.csv
+--high-fi-val-data-path example_data/DR/validate.csv  --high-fi-test-data-path example_data/DR/test.csv
+--high-fi-batch-size 32 --high-fi-target-label DR --low-fi-data-path example_data/SD/SD.csv
+--low-fi-target-label SD --low-fi-batch-size 256 --no-just-high-fi --max-atomic-number 35 --edge-dim 13
+--node-latent-dim 50 --edge-latent-dim 50 --fidelity-embedding-dim 16 --use-set2set --smiles-column neut-smiles
+--id-column CID --out-dir <OUT_PATH> --logging-name testing-low+high-fi --task-type regression
+--dataloader-num-workers 8 --use-cuda --lr 0.0001 --num-layers 3 --no-use-batch-norm
+```
+
+
+## SchNet with more than 2 fidelities
+We have adapted the source code from the paper **Modelling local and general quantum mechanical properties with attention-based pooling** (hosted at [https://github.com/davidbuterez/attention-based-pooling-for-quantum-properties](https://github.com/davidbuterez/attention-based-pooling-for-quantum-properties)) to support multi-fidelity learning with more than 2 fidelities.
+
+To train a baseline model without any augmentations:
+
+```
+python -m schnet_multiple_fidelities.train --dataset QM7 --readout sum --lr 0.0001 --batch-size 128 --use-cuda
+--target-id 4 --schnet-hidden-channels 256 --schnet-num-filters 256 --schnet-num-interactions 8 --random-seed 23887
+--out-dir <OUT_PATH>
+```
+
+To train a model augmented with labels (for example ZINDO):
+
+```
+python -m schnet_multiple_fidelities.train --dataset QM7 --readout sum --lr 0.0001 --batch-size 128 --use-cuda
+--target-id 4 --schnet-hidden-channels 256 --schnet-num-filters 256 --schnet-num-interactions 8 --random-seed 23887
+--out-dir <OUT_PATH> --lbl-or-emb lbl --include zindo --aux-dim 1
+```
+
+With Set Transformer (ST) embeddings from one of the lower fidelities:
+```
+python -m schnet_multiple_fidelities.train --dataset QM7 --readout sum --lr 0.0001 --batch-size 128 --use-cuda
+--target-id 4 --schnet-hidden-channels 256 --schnet-num-filters 256 --schnet-num-interactions 8 --random-seed 23887
+--out-dir <OUT_PATH> --lbl-or-emb emb --include pbe0 --emb-type st --aux-dim 256
+```
+
+
+Or sum embeddings from one of the lower fidelities:
+```
+python -m schnet_multiple_fidelities.train --dataset QM7 --readout sum --lr 0.0001 --batch-size 128 --use-cuda
+--target-id 4 --schnet-hidden-channels 256 --schnet-num-filters 256 --schnet-num-interactions 8 --random-seed 23887
+--out-dir <OUT_PATH> --lbl-or-emb emb --include pbe0 --emb-type sum --aux-dim 256
+```
+
+Labels from both of the lower fidelities:
+```
+python -m schnet_multiple_fidelities.train --dataset QM7 --readout sum --lr 0.0001 --batch-size 128 --use-cuda
+--target-id 4 --schnet-hidden-channels 256 --schnet-num-filters 256 --schnet-num-interactions 8 --random-seed 23887
+--out-dir <OUT_PATH> --lbl-or-emb lbl --include both --aux-dim 1
+```
+
+Or embeddings from both of the lower fidelities:
+```
+python -m schnet_multiple_fidelities.train --dataset QM7 --readout sum --lr 0.0001 --batch-size 128 --use-cuda
+--target-id 4 --schnet-hidden-channels 256 --schnet-num-filters 256 --schnet-num-interactions 8 --random-seed 23887
+--out-dir <OUT_PATH> --lbl-or-emb emb --include both --emb-type st --aux-dim 256
+```
+
+
 ## Requirements/installation
 The main dependencies are PyTorch, PyTorch Geometric, PyTorch Lightning, and RDKit. Certain steps also require `pandas`, `numpy`, `scipy`, `sklearn`, and `tqdm`. The install time is determined in large part by the quality of the internet connection, but should take less than 30 minutes on a normal computer.
 
-The latest releases of the above work with our code (tested up to PyTorch 1.13). For example:
+The latest releases of the above work with our code (tested up to PyTorch 2.1 and PyTorch Geometric 2.3). For example:
 
 1. Install a CUDA-enabled version of PyTorch
  ```
