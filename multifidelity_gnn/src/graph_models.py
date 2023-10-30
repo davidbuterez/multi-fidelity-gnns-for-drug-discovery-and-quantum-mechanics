@@ -1130,33 +1130,19 @@ class Estimator(pl.LightningModule):
             self.log(f"{epoch_type} AUROC", metrics[1], batch_size=self.batch_size)
             self.log(f"{epoch_type} MCC", metrics[-1], batch_size=self.batch_size)
         else:
-            if self.only_train:
-                metrics = get_metrics(y_true, y_pred)
+            y_pred = torch.from_numpy(y_pred).flatten()
+            y_true = torch.from_numpy(y_true).flatten()
 
+            metrics = get_metrics_pt(y_true, y_pred)
+            for metric_name, metric_value in metrics.items():
                 self.log(
-                    f"{epoch_type} R2 {self.name}",
-                    metrics[-1],
+                    f"{epoch_type} {metric_name}",
+                    metric_value,
                     batch_size=self.batch_size,
                 )
-                self.log(
-                    f"{epoch_type} MAE {self.name}",
-                    metrics[0],
-                    batch_size=self.batch_size,
-                )
-            else:
-                y_pred = torch.from_numpy(y_pred).flatten()
-                y_true = torch.from_numpy(y_true).flatten()
 
-                metrics = get_metrics_pt(y_true, y_pred)
-                for metric_name, metric_value in metrics.items():
-                    self.log(
-                        f"{epoch_type} {metric_name}",
-                        metric_value,
-                        batch_size=self.batch_size,
-                    )
-
-                y_pred = y_pred.detach().cpu().numpy()
-                y_true = y_true.detach().cpu().numpy()
+            y_pred = y_pred.detach().cpu().numpy()
+            y_true = y_true.detach().cpu().numpy()
 
         return metrics, y_pred, y_true
 

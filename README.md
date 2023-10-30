@@ -212,6 +212,32 @@ python -m multifidelity_gnn.train.train_shallow_high_fidelity --data-path exampl
 --lbl-or-emb emb --SD-EMBS-label STEmbeddings
 ```
 
+## Pre-train on low-fidelity and fine-tune on high-fidelity
+The first step for the supervised pre-training/fine-tuning workflow is to train a low-fidelity model as usual, for example using the same command as above:
+
+```
+python -m multifidelity_gnn.train.train_low_fidelity --data-path example_data/SD/SD.csv --low-fidelity-label SD --node-latent-dim 50
+--graph-latent-dim 256 --out-dir out_SD --smiles-column neut-smiles --max-atomic-number 53 --max-num-atoms-in-mol 124
+--readout set_transformer --id-column CID --monitor-loss-name train_total_loss --use-vgae --num-layers 3 --conv GCN
+--use-batch-norm --num-epochs 1 --gnn-intermediate-dim 256 --use-cuda --logging-name AID1445_LF_ST --batch-size 512
+--dataloader-num-workers 12 --set-transformer-hidden-dim 1024 --set-transformer-num-heads 16 --set-transformer-num-sabs 2
+--set-transformer-dropout 0.0
+```
+
+This saves checkpoints (`.ckpt`) for every epoch in the out directory (`CKPT_PATH`). We will use this model as a base for fine-tuning:
+
+```
+python -m multifidelity_gnn.train.train_fine_tune_high_fidelity --high-fidelity-data-path example_data/DR --high-fidelity-label DR
+--node-latent-dim 50 --graph-latent-dim 256 --out-dir <OUT_DIR> --smiles-column neut-smiles --max-atomic-number 53
+--max-num-atoms-in-mol 124 --readout set_transformer --id-column CID --use-vgae --num-layers 3 --conv GCN --use-batch-norm
+--num-epochs 1 --gnn-intermediate-dim 256 --use-cuda --logging-name <NAME> --batch-size 512 --dataloader-num-workers 12
+--set-transformer-hidden-dim 1024 --set-transformer-num-heads 16 --set-transformer-num-sabs 2 --set-transformer-dropout 0.0
+--low-fidelity-ckpt-path <CKPT_PATH> --freeze-vgae
+```
+
+Note that when using the Set Transformer readout the recommended fine-tuning strategy is to freeze the VGAE layers (`--freeze-vgae`). For low-fidelity models using the sum readout, the `--no-freeze-vgae` option should be used instead since the readout function is not learnable.
+
+
 ## Multi-fidelity state embedding (MFSE)
 To run the MFSE algorithm with only high-fidelity data:
 

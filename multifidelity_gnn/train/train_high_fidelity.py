@@ -24,34 +24,18 @@ def main():
     parser.add_argument("--smiles-column", required=True)
     parser.add_argument("--max-atomic-number", type=int, required=True)
     parser.add_argument("--id-column", required=True)
-    parser.add_argument(
-        "--use-vgae", action=argparse.BooleanOptionalAction, required=True, default=True
-    )
+    parser.add_argument("--use-vgae", action=argparse.BooleanOptionalAction, required=True, default=True)
     parser.add_argument("--num-layers", type=int, required=True)
-    parser.add_argument(
-        "--conv", choices=["GCN", "GIN", "PNA"], type=str, required=True
-    )
-    parser.add_argument(
-        "--use-batch-norm",
-        action=argparse.BooleanOptionalAction,
-        required=True,
-        default=True,
-    )
+    parser.add_argument("--conv", choices=["GCN", "GIN", "PNA"], type=str, required=True)
+    parser.add_argument("--use-batch-norm", action=argparse.BooleanOptionalAction, required=True, default=True)
     parser.add_argument("--dataloader-num-workers", type=int, required=False, default=0)
     parser.add_argument("--gnn-intermediate-dim", type=int, required=True)
     parser.add_argument("--edge-dim", type=int, required=False)
-    parser.add_argument(
-        "--use-cuda",
-        action=argparse.BooleanOptionalAction,
-        required=False,
-        default=False,
-    )
+    parser.add_argument("--use-cuda", action=argparse.BooleanOptionalAction, required=False, default=False)
     parser.add_argument("--logging-name", type=str, required=True)
     parser.add_argument("--lbl-or-emb", type=str, required=False)
     parser.add_argument("--auxiliary-dim", type=int, required=False)
-    parser.add_argument(
-        "--task-type", choices=["regression", "classification"], type=str, required=True
-    )
+    parser.add_argument("--task-type", choices=["regression", "classification"], type=str, required=True)
     parser.add_argument("--train-auxiliary-data-column-name", type=str, required=False)
     parser.add_argument("--eval-auxiliary-data-column-name", type=str, required=False)
     parser.add_argument("--batch-size", type=int, default=32)
@@ -140,6 +124,7 @@ def main():
 
     model = Estimator(**gnn_args)
 
+    # Callbacks
     checkpoint_callback = ModelCheckpoint(
         monitor=MONITOR_LOSS,
         dirpath=argsdict["out_dir"],
@@ -169,7 +154,6 @@ def main():
 
     # Train
     if argsdict["use_cuda"]:
-        model = model.cuda()
         accelerator = dict(accelerator="gpu")
     else:
         accelerator = dict(accelerator="cpu")
