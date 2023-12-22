@@ -56,7 +56,7 @@ def load_QM7_aux(random_seed:int, target_property_id: int):
     assert random_seed in [23887, 386333, 514094, 572909, 598587]
     assert target_property_id in range(14)
 
-    ds = torch.load('/home/david/Projects_HTS_Quantum_Rev/quantum-3d-multifidelity-SCP/QM7b_aux.pt')
+    ds = torch.load('example_data/QM7b_aux.pt')
 
     train, val, test = torch.utils.data.random_split(ds, [5769, 721, 721], generator=torch.Generator().manual_seed(random_seed))
 
