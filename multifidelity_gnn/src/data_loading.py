@@ -65,31 +65,25 @@ class GraphMoleculeDataset(TorchDataset):
         if self.id_column:
             ids = selected[self.id_column].values
         smiles = selected[self.smiles_column_name].values
-        try:
-            if self.scaler:
-                if selected[self.label_column_name].values.ndim == 1:
-                    labels = torch.Tensor(
-                        self.scaler.transform(
-                            np.expand_dims(
-                                selected[self.label_column_name].values, axis=1
-                            )
-                        )
-                    )
-                else:
-                    labels = torch.Tensor(
-                        self.scaler.transform(selected[self.label_column_name].values)
-                    )
-            else:
-                labels = torch.Tensor(selected[self.label_column_name].values)
-        except:
-            labels = torch.Tensor([0] * len(idx))
+
+        num_tasks = len(self.label_column_name)
+        targets = selected[self.label_column_name].values
+
+        if self.scaler is not None:
+            labels = torch.Tensor(self.scaler.transform(targets.reshape(-1, num_tasks)))
+        else:
+            labels = torch.Tensor(targets)
+
         smiles = [remove_smiles_stereo(s) for s in smiles]
         rdkit_mols = [Chem.MolFromSmiles(s) for s in smiles]
 
+        aux_data = None
         if self.auxiliary_data_column_name:
             column_values = selected[self.auxiliary_data_column_name].values
+
             if self.lbl_or_emb and self.lbl_or_emb == "lbl":
                 aux_data = torch.Tensor(column_values)
+
             elif self.lbl_or_emb == "emb":
                 # Need to parse the NumPy array from the string stored in the DataFrame
                 aux_data = torch.Tensor(
@@ -100,8 +94,7 @@ class GraphMoleculeDataset(TorchDataset):
                         )
                     )
                 )
-        else:
-            aux_data = None
+
 
         atom_feat = [
             torch.Tensor(
@@ -117,6 +110,7 @@ class GraphMoleculeDataset(TorchDataset):
             ei = torch.nonzero(
                 torch.from_numpy(Chem.rdmolops.GetAdjacencyMatrix(mol))
             ).T
+
             bf = torch.Tensor(
                 [
                     bond_features(
@@ -163,7 +157,7 @@ class GeometricDataModule(pl.LightningDataModule):
         id_column: Optional[str] = None,
         num_cores: Tuple[int, int, int] = (12, 0, 12),
         smiles_column_name: str = "SMILES",
-        label_column_name: str = "SD",
+        label_column_name: Union[str, List[str]] = "SD",
         train_auxiliary_data_column_name: Optional[str] = None,
         lbl_or_emb: str = "lbl",
         eval_auxiliary_data_column_name: Optional[str] = None,

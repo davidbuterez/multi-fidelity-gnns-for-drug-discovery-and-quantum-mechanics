@@ -18,7 +18,7 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-path", required=True)
-    parser.add_argument("--target-label", required=True)
+    parser.add_argument("--target-label", required=True, nargs='+')
     parser.add_argument("--node-latent-dim", type=int, required=True)
     parser.add_argument("--out-dir", required=True)
     parser.add_argument("--smiles-column", required=True)
@@ -101,7 +101,7 @@ def main():
         node_latent_dim=argsdict["node_latent_dim"],
         batch_size=batch_size,
         lr=LR,
-        linear_output_size=1,
+        linear_output_size=len(argsdict["target_label"]),
         max_num_atoms_in_mol=max_num_atoms_in_mol,
         scaler=scaler,
         monitor_loss=MONITOR_LOSS,

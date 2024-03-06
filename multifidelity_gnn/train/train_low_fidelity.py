@@ -16,7 +16,7 @@ def main():
 
     parser = argparse.ArgumentParser(description="Low-fidelity training script.")
     parser.add_argument("--data-path", required=True)
-    parser.add_argument("--low-fidelity-label", required=True)
+    parser.add_argument("--low-fidelity-label", required=True, nargs='+')
     parser.add_argument("--node-latent-dim", type=int, required=True)
     parser.add_argument("--graph-latent-dim", type=int, required=True)
     parser.add_argument("--out-dir", required=True)

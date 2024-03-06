@@ -23,7 +23,7 @@ from tqdm.auto import tqdm
 from typing import Optional
 
 from .set_transformer_models import SetTransformer
-from .reporting import get_metrics_pt, get_cls_metrics
+from .reporting import get_metrics_pt, get_metrics_cls_pt
 
 torch.set_num_threads(1)
 
@@ -740,6 +740,13 @@ class Estimator(pl.LightningModule):
         else:
             print("NOT using edge (bond) features.")
 
+        if linear_output_size > 1:
+            print("Training and evaluation in a MULTI-task scenario with %d tasks." % (linear_output_size,))
+        else:
+            print("Training and evaluation in a SINGLE-task scenario.")
+
+        print()
+
         self.readout = readout
         self.num_features = num_features
         self.lr = lr
@@ -960,7 +967,7 @@ class Estimator(pl.LightningModule):
         else:
             predictions = self.linear_output1(graph_embeddings).relu()
 
-        predictions = torch.flatten(self.linear_output2(predictions))
+        predictions = self.linear_output2(predictions)
 
         return z, graph_embeddings_to_return, predictions
 
@@ -1003,14 +1010,19 @@ class Estimator(pl.LightningModule):
             vgae_loss = self.gnn_model.recon_loss(z, edge_index)
             vgae_loss = vgae_loss + (1 / num_nodes) * self.gnn_model.kl_loss()
 
+        predictions = predictions.reshape(-1, self.linear_output_size)
+        y = y.reshape(-1, self.linear_output_size)
+
         if self.task_type == "classification":
-            predictions = predictions.reshape(-1, self.linear_output_size)
             task_loss = F.binary_cross_entropy_with_logits(
-                predictions.squeeze(), y.squeeze().float()
+                predictions, y.float()
             )
 
         else:
-            task_loss = F.mse_loss(torch.flatten(predictions), torch.flatten(y.float()))
+            task_loss = F.mse_loss(
+                predictions,
+                y.float()
+            )
 
         if self.use_vgae:
             total_loss = vgae_loss + task_loss
@@ -1040,7 +1052,7 @@ class Estimator(pl.LightningModule):
             predictions,
         ) = self._batch_loss(x, edge_index, y, batch_mapping, aux_data, edge_attr)
 
-        output = (torch.flatten(predictions), torch.flatten(y))
+        output = (predictions, y)
 
         if step_type == "train":
             self.train_output[self.current_epoch].append(output)
@@ -1097,64 +1109,50 @@ class Estimator(pl.LightningModule):
 
     def _epoch_end_report(self, epoch_outputs, epoch_type):
         y_pred = (
-            torch.flatten(torch.cat([item[0] for item in epoch_outputs], dim=0))
+            torch.cat([item[0] for item in epoch_outputs], dim=0)
             .detach()
             .cpu()
             .numpy()
         )
         y_true = (
-            torch.flatten(torch.cat([item[1] for item in epoch_outputs], dim=0))
+            torch.cat([item[1] for item in epoch_outputs], dim=0)
             .detach()
             .cpu()
             .numpy()
         )
 
         if self.scaler:
-            if self.linear_output_size > 1:
-                y_pred = self.scaler.inverse_transform(
-                    y_pred.reshape(-1, self.linear_output_size)
-                )
-                y_true = self.scaler.inverse_transform(
-                    y_true.reshape(-1, self.linear_output_size)
-                )
-            else:
-                y_pred = self.scaler.inverse_transform(y_pred.reshape(-1, 1)).flatten()
-                y_true = self.scaler.inverse_transform(y_true.reshape(-1, 1)).flatten()
+            y_pred = self.scaler.inverse_transform(y_pred.reshape(-1, self.linear_output_size))
+            y_true = self.scaler.inverse_transform(y_true.reshape(-1, self.linear_output_size))
+
+        y_pred = torch.from_numpy(y_pred)
+        y_true = torch.from_numpy(y_true)
 
         if self.task_type == "classification":
-            y_pred = np.where(y_pred >= 0.5, 1, 0).astype(int).flatten()
-            y_true = y_true.astype(int).flatten()
-
-            metrics = get_cls_metrics(y_true, y_pred)
-
-            self.log(f"{epoch_type} AUROC", metrics[1], batch_size=self.batch_size)
-            self.log(f"{epoch_type} MCC", metrics[-1], batch_size=self.batch_size)
+            y_true = y_true.long()
+            metrics = get_metrics_cls_pt(y_true, y_pred)
         else:
-            y_pred = torch.from_numpy(y_pred).flatten()
-            y_true = torch.from_numpy(y_true).flatten()
-
             metrics = get_metrics_pt(y_true, y_pred)
-            for metric_name, metric_value in metrics.items():
-                self.log(
-                    f"{epoch_type} {metric_name}",
-                    metric_value,
-                    batch_size=self.batch_size,
-                )
 
-            y_pred = y_pred.detach().cpu().numpy()
-            y_true = y_true.detach().cpu().numpy()
+        for metric_name, metric_value in metrics.items():
+            self.log(
+                f"{epoch_type} {metric_name}",
+                metric_value,
+                batch_size=self.batch_size,
+            )
+
+        y_pred = y_pred.detach().cpu().numpy()
+        y_true = y_true.detach().cpu().numpy()
 
         return metrics, y_pred, y_true
 
     def on_train_epoch_end(self):
         if self.only_train:
-            (
-                self.train_metrics[self.current_epoch],
-                y_pred,
-                y_true,
-            ) = self._epoch_end_report(
+            train_metrics, y_pred, y_true,= self._epoch_end_report(
                 self.train_output[self.current_epoch], epoch_type="Train"
             )
+
+            self.train_metrics[self.current_epoch] = train_metrics
 
             del y_pred
             del y_true
@@ -1163,11 +1161,9 @@ class Estimator(pl.LightningModule):
     def on_validation_epoch_end(self):
         if not self.only_train:
             val_outputs_per_epoch = self.val_output[self.current_epoch]
-            (
-                self.val_metrics[self.current_epoch],
-                y_pred,
-                y_true,
-            ) = self._epoch_end_report(val_outputs_per_epoch, epoch_type="Validation")
+            val_metrics, y_pred, y_true = self._epoch_end_report(val_outputs_per_epoch, epoch_type="Validation")
+
+            self.val_metrics[self.current_epoch] = val_metrics
 
             del y_pred
             del y_true
@@ -1175,18 +1171,14 @@ class Estimator(pl.LightningModule):
 
     def on_test_epoch_end(self):
         test_outputs_per_epoch = self.test_output[self.num_called_test]
-        (
-            self.test_metrics[self.num_called_test],
-            y_pred,
-            y_true,
-        ) = self._epoch_end_report(test_outputs_per_epoch, epoch_type="Test")
+        test_metrics, y_pred, y_true = self._epoch_end_report(test_outputs_per_epoch, epoch_type="Test")
 
-        self.test_graph_embeddings[self.num_called_test] = (
-            torch.cat(self.test_graph_embeddings[self.num_called_test])
-            .detach()
-            .cpu()
-            .numpy()
-        )
+        self.test_metrics[self.num_called_test] = test_metrics
+
+        self.test_graph_embeddings[self.num_called_test] = torch.cat(
+            self.test_graph_embeddings[self.num_called_test]
+        ).detach().cpu().numpy()
+
         self.test_output[self.num_called_test] = y_pred
         self.test_true[self.num_called_test] = y_true
         self.num_called_test += 1
