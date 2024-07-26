@@ -66,7 +66,10 @@ class GraphMoleculeDataset(TorchDataset):
             ids = selected[self.id_column].values
         smiles = selected[self.smiles_column_name].values
 
-        num_tasks = len(self.label_column_name)
+        if isinstance(self.label_column_name, (list, tuple)):
+            num_tasks = len(self.label_column_name)
+        else:
+            num_tasks = 1
         targets = selected[self.label_column_name].values
 
         if self.scaler is not None:

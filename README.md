@@ -232,8 +232,7 @@ This saves checkpoints (`.ckpt`) for every epoch in the out directory (`CKPT_PAT
 ```
 python -m multifidelity_gnn.train.train_fine_tune_high_fidelity --high-fidelity-data-path example_data/DR --high-fidelity-label DR
 --node-latent-dim 50 --graph-latent-dim 256 --out-dir <OUT_DIR> --smiles-column neut-smiles --max-atomic-number 53
---max-num-atoms-in-mol 124 --readout set_transformer --id-column CID --use-vgae --num-layers 3 --conv GCN --use-batch-norm
---num-epochs 1 --gnn-intermediate-dim 256 --use-cuda --logging-name <NAME> --batch-size 512 --dataloader-num-workers 12
+--max-num-atoms-in-mol 124 --readout set_transformer --id-column CID --use-vgae --num-layers 3 --conv GCN --use-batch-norm --gnn-intermediate-dim 256 --use-cuda --logging-name <NAME> --batch-size 512 --dataloader-num-workers 12
 --set-transformer-hidden-dim 1024 --set-transformer-num-heads 16 --set-transformer-num-sabs 2 --set-transformer-dropout 0.0
 --low-fidelity-ckpt-path <CKPT_PATH> --freeze-vgae
 ```
