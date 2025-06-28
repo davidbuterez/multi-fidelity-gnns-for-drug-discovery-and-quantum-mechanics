@@ -348,3 +348,28 @@ We have also successfully run the code on PyTorch 1.13.1, a nightly version of P
 
 ### Tested hardware
 The code was tested on an NVIDIA GeForce RTX 3090 24GB GPU (running under Ubuntu 21.10, with driver version 510.73.05), NVIDIA Tesla V100 16GB and 32GB GPUs, and an Apple M1 Max chip (CPU only).
+
+## Citation
+
+If you use our workflow in your work, a citation to the paper is appreciated:
+
+```
+@Article{Buterez2024,
+    author={Buterez, David
+    and Janet, Jon Paul
+    and Kiddle, Steven J.
+    and Oglic, Dino
+    and Li{\'o}, Pietro},
+    title={Transfer learning with graph neural networks for improved molecular property prediction in the multi-fidelity setting},
+    journal={Nature Communications},
+    year={2024},
+    month={Feb},
+    day={26},
+    volume={15},
+    number={1},
+    pages={1517},
+    issn={2041-1723},
+    doi={10.1038/s41467-024-45566-8},
+    url={https://doi.org/10.1038/s41467-024-45566-8}
+}
+```
